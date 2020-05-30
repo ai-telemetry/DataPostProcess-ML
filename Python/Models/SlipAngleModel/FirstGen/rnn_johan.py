@@ -8,23 +8,54 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # Importing the training set
-dataset_train = pd.read_csv('Google_Stock_Price_Train.csv')
-training_set = dataset_train.iloc[:, 1:2].values
+dataset_train = pd.read_csv('D:\GitHub\DataPostProcess-ML\Python\Models\SlipAngleModel\FirstGen\Data\LotusR12520LapsMugello.csv')
+
+# Removing NaN
+dataset_train = dataset_train.dropna()
+
+
+# Creating the X variables
+training_set_X = dataset_train.drop(columns= ["rTyreSlipFR",
+                                              "rTyreSlipFL",
+                                              "rTyreSlipRL",
+                                              "rTyreSlipRR",
+                                              "aTyreSlipFR",
+                                              "aTyreSlipFL",
+                                              "aTyreSlipRL",
+                                              "aTyreSlipRR",
+                                              "ndSlipFL",
+                                              "ndSlipFR",
+                                              "ndSlipRL",
+                                              "ndSlipRR"])
+
+head = training_set_X.head()
+
+# Creating the y variabel
+trainin_set_y = dataset_train["rTyreSlipFR"]
 
 # Feature Scaling
 from sklearn.preprocessing import MinMaxScaler
 sc = MinMaxScaler(feature_range = (0, 1))
-training_set_scaled = sc.fit_transform(training_set)
+training_set_scaled_X = sc.fit_transform(training_set_X)
+y_train = sc.fit_transform(training_set_y)
+
+# Applying PCA
+from sklearn.decomposition import PCA
+pca = PCA(n_components = 2) # put None to check the variance
+X_train = pca.fit_transform(training_set_scaled_X)
+explained_variance = pca.explained_variance_ratio_
+
+
+
 
 # Creating a data structure with 60(can be changed) timesteps and 1 output
 lookback = 60 # Decide how far to look back
 X_train = []
 y_train = []
 
-for i in range(lookback, training_set_scaled.shape[0]):
-    X_train.append(training_set_scaled[i-lookback:i, 0])
-    y_train.append(training_set_scaled[i, 0])
-
+for j in range(lookback, training_set_scaled_X.shape[0]):
+        X_train.append(training_set_scaled_X[j-lookback:j, i])
+        
 X_train, y_train = np.array(X_train), np.array(y_train)
 
 # Reshaping
@@ -72,7 +103,7 @@ regressor.fit(X_train, y_train, epochs = 100, batch_size = 32)
 
 
 # Importing the training set
-dataset_test = pd.read_csv('Google_Stock_Price_test.csv')
+dataset_test = pd.read_csv('D:\GitHub\DataPostProcess-ML\Python\Models\SlipAngleModel\FirstGen\Data\LotusR1252LapsMugello.csv')
 real_stock_price = dataset_test.iloc[:, 1:2].values
 
 # Getting the predicted values
