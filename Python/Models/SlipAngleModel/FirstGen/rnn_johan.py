@@ -8,53 +8,84 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # Importing the training set
-dataset_train = pd.read_csv('D:\GitHub\DataPostProcess-ML\Python\Models\SlipAngleModel\FirstGen\Data\LotusR12520LapsMugello.csv')
+dataset = pd.read_csv('D:\GitHub\DataPostProcess-ML\Python\Models\SlipAngleModel\FirstGen\Data\LotusR12520LapsMugello.csv')
 
 # Removing NaN
-dataset_train = dataset_train.dropna()
+dataset = dataset.dropna()
 
 
 # Creating the X variables
-training_set_X = dataset_train.drop(columns= ["rTyreSlipFR",
-                                              "rTyreSlipFL",
-                                              "rTyreSlipRL",
-                                              "rTyreSlipRR",
-                                              "aTyreSlipFR",
-                                              "aTyreSlipFL",
-                                              "aTyreSlipRL",
-                                              "aTyreSlipRR",
-                                              "ndSlipFL",
-                                              "ndSlipFR",
-                                              "ndSlipRL",
-                                              "ndSlipRR"])
+training_set = dataset.drop(columns= ["rTyreSlipFL",
+                           "rTyreSlipRL",
+                           "rTyreSlipRR",
+                           "aTyreSlipFR",
+                           "aTyreSlipFL",
+                           "aTyreSlipRL",
+                           "aTyreSlipRR",
+                           "ndSlipFL",
+                           "ndSlipFR",
+                           "ndSlipRL",
+                           "ndSlipRR",
+                           "isInPit",
+                           "vCar_kph",
+                           "vCar_mph",
+                           "tLap",
+                           "tLastLap",
+                           "tBestLap",
+                           "nLap",
+                           "isTcEnabled",
+                           "isTcInAction",
+                           "isAbsEnabled",
+                           "aContactPatchSlipFL",
+                           "aContactPatchSlipFR",
+                           "aContactPatchSlipRL",
+                           "aContactPatchSlipRR",
+                           "aPitch",
+                           "tyreRadiusFL",
+                           "tyreRadiusFR",
+                           "tyreRadiusRL",
+                           "tyreRadiusRR"])
 
-head = training_set_X.head()
 
-# Creating the y variabel
-trainin_set_y = dataset_train["rTyreSlipFR"]
+# Encoding True/False into 0 and 1
+arraynames = ['isEngineLimiterOn']
+for name in arraynames:
+    training_set[name] = training_set[name].astype(int)
+
+# Checking head
+training_set_head = training_set.head()
+training_set_X = training_set.drop(columns= ['rTyreSlipFR'])
+training_set_y = training_set['rTyreSlipFR'].values
+training_set_y = training_set_y.reshape(-1,1)
 
 # Feature Scaling
-from sklearn.preprocessing import MinMaxScaler
-sc = MinMaxScaler(feature_range = (0, 1))
-training_set_scaled_X = sc.fit_transform(training_set_X)
-y_train = sc.fit_transform(training_set_y)
+"""from sklearn.preprocessing import MinMaxScaler
+sc_x = MinMaxScaler(feature_range = (0, 1))
+training_set_X = sc_x.fit_transform(training_set_X)
+sc_y = MinMaxScaler(feature_range = (0, 1))
+training_set_y = sc_y.fit_transform(training_set_y)
+"""
+min_ts_X = training_set_X.min(axis = 0)
+max_ts_X = training_set_X.max(axis = 0)
 
-# Applying PCA
-from sklearn.decomposition import PCA
-pca = PCA(n_components = 2) # put None to check the variance
-X_train = pca.fit_transform(training_set_scaled_X)
-explained_variance = pca.explained_variance_ratio_
+training_set_X_scaled = (training_set_X - min_ts_X)/(max_ts_X - min_ts_X)
+has_nan = pd.isnull(training_set_X_scaled).values.any()
+assert has_nan == False
 
+min_ts_y = training_set_y.min(axis = 0)
+max_ts_y = training_set_y.max(axis = 0)
 
+training_set_y_scaled = (training_set_y - min_ts_y)/(max_ts_y - min_ts_y)
 
+training_set_y_scaled.reshape(-1,1)
 
 # Creating a data structure with 60(can be changed) timesteps and 1 output
-lookback = 60 # Decide how far to look back
+lookback = 10 # Decide how far to look back
 X_train = []
 y_train = []
-
-for j in range(lookback, training_set_scaled_X.shape[0]):
-        X_train.append(training_set_scaled_X[j-lookback:j, i])
+for i in range(lookback, training_set_X_scaled.shape[0]):
+    X_train.append(training_set_X_scaled[i-lookback:i, 0])
+    y_train.append(training_set_y[i, 0])
         
 X_train, y_train = np.array(X_train), np.array(y_train)
 
@@ -64,31 +95,29 @@ X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 1))
 # Import the Keras libraries and packages
 from keras.models import Sequential
 from keras.layers import Dense
-from keras.layers import LSTM 
+from keras.layers import LSTM
+from keras.layers import CuDNNLSTM
 from keras.layers import Dropout
+
 
 # Initialising the RNN
 regressor = Sequential()
 
 # adding first layer
-regressor.add(LSTM(units = 50,
-                   return_sequences = True,
+regressor.add(LSTM(50, return_sequences = True,
                    input_shape = ( X_train.shape[1], 1)))
 regressor.add(Dropout(0.2))
 
-# adding second layer
-regressor.add(LSTM(units = 50,
-                   return_sequences = True))
+# adding third layer
+regressor.add(LSTM(units = 50, return_sequences = True))
 regressor.add(Dropout(0.2))
 
 # adding third layer
-regressor.add(LSTM(units = 50,
-                   return_sequences = True))
+regressor.add(LSTM(units = 50, return_sequences = True))
 regressor.add(Dropout(0.2))
 
 # adding fourth layer last layer so return = false
-regressor.add(LSTM(units = 50,
-                   return_sequences = False))
+regressor.add(LSTM(units = 50))
 regressor.add(Dropout(0.2))
 
 # Output layer
@@ -98,19 +127,50 @@ regressor.add(Dense(units = 1))
 regressor.compile(optimizer = 'adam',
                   loss = 'mean_squared_error')
 
-# Fitting the RNN
-regressor.fit(X_train, y_train, epochs = 100, batch_size = 32)
+# Fitting the RNN to the Training set
+regressor.fit(X_train, y_train, epochs = 50, batch_size = 150)
 
 
 # Importing the training set
 dataset_test = pd.read_csv('D:\GitHub\DataPostProcess-ML\Python\Models\SlipAngleModel\FirstGen\Data\LotusR1252LapsMugello.csv')
-real_stock_price = dataset_test.iloc[:, 1:2].values
+
+# Removing NaN
+dataset_test = dataset_test.dropna()
+
+# Creating the y variabel
+test_set_y = dataset_test["rTyreSlipFR"].values
+
+test_set = dataset_test.drop(columns= ["rTyreSlipFR",
+                            "rTyreSlipFL",
+                           "rTyreSlipRL",
+                           "rTyreSlipRR",
+                           "aTyreSlipFR",
+                           "aTyreSlipFL",
+                           "aTyreSlipRL",
+                           "aTyreSlipRR",
+                           "ndSlipFL",
+                           "ndSlipFR",
+                           "ndSlipRL",
+                           "ndSlipRR",
+                           "isInPit",
+                           "vCar_kph",
+                           "vCar_mph",
+                           "tLap",
+                           "tLastLap",
+                           "tBestLap",
+                           "nLap"])
+
+
+# Encoding True/False into 0 and 1
+arraynames = ['isAbsEnabled','isAbsInAction','isTcEnabled','isTcInAction','isEngineLimiterOn']
+for name in arraynames:
+    test_set[name] = test_set[name].astype(int)
 
 # Getting the predicted values
-dataset_total = pd.concat((dataset_train['Open'], dataset_test['Open']), 0)
-inputs = dataset_total[len(dataset_total)-len(dataset_test)-60:].values
-inputs = inputs.reshape(-1,1)
-inputs = sc.transform(inputs)
+dataset_total = pd.concat((training_set, test_set), axis = 0)
+inputs = dataset_total[len(dataset_total) - len(test_set) - lookback:].values
+inputs = sc_x.transform(inputs)
+
 # Creating a data structure
 X_test = []
 for i in range(lookback, inputs.shape[0]):
@@ -119,16 +179,17 @@ X_test = np.array(X_test)
 
 X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
 
-predicted_stock_price = regressor.predict(X_test)
-predicted_stock_price = sc.inverse_transform(predicted_stock_price)
+predicted_rTyreSlipFR = regressor.predict(X_test)
+predicted_rTyreSlipFR = sc_y.inverse_transform(predicted_rTyreSlipFR)
 
 # Visualising the results
-plt.plot(real_stock_price, color = 'red', label = 'Real')
-plt.plot(predicted_stock_price, color = 'blue', label = 'Pred')
-plt.title('RNN Prediction of Google Stock Price')
+plt.plot(test_set_y, color = 'red', label = 'Real')
+plt.plot(predicted_rTyreSlipFR, color = 'blue', label = 'Pred')
+plt.title('RNN Prediction of Slip angle FR from Assetto Corsa')
 plt.xlabel('Time')
-plt.ylabel('Price')
+plt.ylabel('r slip angle')
 plt.legend()
 plt.show()
 
-
+plt.plot(test_set_y)
+plt.show()

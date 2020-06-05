@@ -68,65 +68,44 @@ explained_variance = pca.explained_variance_ratio_
 total = sum(explained_variance)
 
 
+# Importing the Keras libraries and packages
+import keras
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import Dropout
 
-def build_regressor_constant():
+# Initialising the ANN
+regressor = Sequential()
 
-    # Importing the Keras libraries and packages
-    import keras
-    from keras.models import Sequential
-    from keras.layers import Dense
-    from keras.layers import Dropout
+# Adding the input layer and the first hidden layer
+regressor.add(Dense(units = 80, 
+                    kernel_initializer = 'uniform', 
+                    activation = 'relu', 
+                    input_dim = 19))
+regressor.add(Dropout(rate = 0.1))
 
-    # Initialising the ANN
-    regressor = Sequential()
+# Adding the second hidden layer
+regressor.add(Dense(units = 80, 
+                    kernel_initializer = 'uniform', 
+                    activation = 'relu'))
+regressor.add(Dropout(rate = 0.1))
 
-    # Adding the input layer and the first hidden layer
-    regressor.add(Dense(units = 50, 
-                        kernel_initializer = 'uniform', 
-                        activation = 'relu', 
-                        input_dim = 19))
-    regressor.add(Dropout(rate = 0.1))
 
-    # Adding the second hidden layer
-    regressor.add(Dense(units = 50, 
-                        kernel_initializer = 'uniform', 
-                        activation = 'relu'))
-    regressor.add(Dropout(rate = 0.1))
+# Adding the output layer
+regressor.add(Dense(units = 1))
+
+# Compiling the ANN
+regressor.compile(optimizer = 'adam', 
+                  loss = 'mean_squared_error')
+
+# Fitting the ANN to the Training set
+regressor.fit(X_train, y_train, epochs = 600, batch_size = 100)
     
-    # Adding the second hidden layer
-    regressor.add(Dense(units = 50, 
-                        kernel_initializer = 'uniform', 
-                        activation = 'relu'))
-    regressor.add(Dropout(rate = 0.1))
-    
-    # Adding the second hidden layer
-    regressor.add(Dense(units = 50, 
-                        kernel_initializer = 'uniform', 
-                        activation = 'relu'))
-    regressor.add(Dropout(rate = 0.1))
-    
-    # Adding the second hidden layer
-    regressor.add(Dense(units = 50, 
-                        kernel_initializer = 'uniform', 
-                        activation = 'relu'))
-    regressor.add(Dropout(rate = 0.1))
-    
-    # Adding the output layer
-    regressor.add(Dense(units = 1))
-    
-    # Compiling the ANN
-    regressor.compile(optimizer = 'adam', 
-                      loss = 'mean_squared_error')
-    
-    # Fitting the ANN to the Training set
-    regressor.fit(X_train, y_train, epochs = 100, batch_size = 32)
-    
-    return regressor
 
 # Predicting the Test set results
 y_pred = regressor.predict(X_test)
 
-# Making the Confusion Matrix
+# Making the evalution of the model
 from sklearn.metrics import mean_squared_error
 rmse = mean_squared_error(y_test, y_pred)
 
@@ -137,11 +116,74 @@ plt.ylabel('slip_scaled')
 plt.legend()
 plt.show()
 
-# Improving the ANN
+
+# Evaluation
+import keras
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import Dropout
+from keras.wrappers.scikit_learn import KerasRegressor
+from sklearn.model_selection import cross_val_score
+def build_regressor():
+    # Initialising the ANN
+    regressor = Sequential()
+    
+    # Adding the input layer and the first hidden layer
+    regressor.add(Dense(units = 100, 
+                        kernel_initializer = 'uniform', 
+                        activation = 'relu', 
+                        input_dim = 19))
+    regressor.add(Dropout(rate = 0.1))
+    # Adding the second hidden layer
+    regressor.add(Dense(units = 100, 
+                        kernel_initializer = 'uniform', 
+                        activation = 'relu'))
+    regressor.add(Dropout(rate = 0.1))
+    # Adding the second hidden layer
+    regressor.add(Dense(units = 100, 
+                        kernel_initializer = 'uniform', 
+                        activation = 'relu'))
+    regressor.add(Dropout(rate = 0.1))
+    # Adding the second hidden layer
+    regressor.add(Dense(units = 100, 
+                        kernel_initializer = 'uniform', 
+                        activation = 'relu'))
+    regressor.add(Dropout(rate = 0.1))
+    # Adding the second hidden layer
+    regressor.add(Dense(units = 100, 
+                        kernel_initializer = 'uniform', 
+                        activation = 'relu'))
+    regressor.add(Dropout(rate = 0.1))
+    # Adding the output layer
+    regressor.add(Dense(units = 1))
+    # Compiling the ANN
+    regressor.compile(optimizer = 'adam', 
+                      loss = 'mean_squared_error')   
+    
+    return regressor
+
+regressor = KerasRegressor(build_fn = build_regressor,
+                             batch_size = 100, epochs = 100)
+accuracies = cross_val_score(estimator = regressor,
+                             X = X_train,
+                             y = y_train,
+                             cv = 10,
+                             n_jobs = 3)
+mean = accuracies.mean()
+std = accuracies.std()
+
+
+
+
+# If you want to do a gridsearch then uncomment below
+
+import sklearn
 from sklearn.model_selection import GridSearchCV
 from keras.models import Sequential
 from keras.layers import Dense
-def build_classifier(nr_layers,neurons,optimizer,rate,epochs,batch_size):
+from keras.layers import Dropout
+from keras.wrappers.scikit_learn import KerasRegressor
+def build_regressor(neurons):
     # Initialising the ANN
     regressor = Sequential()
 
@@ -150,40 +192,33 @@ def build_classifier(nr_layers,neurons,optimizer,rate,epochs,batch_size):
                         kernel_initializer = 'uniform', 
                         activation = 'relu', 
                         input_dim = 19))
-    regressor.add(Dropout(rate = rate))
+    regressor.add(Dropout(rate = 0.1))
     
-    for nr_layers
-        # Adding the hidden layers as specified by nr_layers
-        regressor.add(Dense(units = neurons, 
-                            kernel_initializer = 'uniform', 
-                            activation = 'relu'))
-        regressor.add(Dropout(rate = rate))
+    # Adding the hidden layers as specified by nr_layers
+    regressor.add(Dense(units = neurons, 
+                        kernel_initializer = 'uniform', 
+                        activation = 'relu'))
+    regressor.add(Dropout(rate = 0.1))
     
     
     # Adding the output layer
     regressor.add(Dense(units = 1))
     
     # Compiling the ANN
-    regressor.compile(optimizer = optimizer, 
+    regressor.compile(optimizer = 'adam', 
                       loss = 'mean_squared_error')
     
     # Fitting the ANN to the Training set
-    regressor.fit(X_train, y_train, epochs = epochs, batch_size = batch_size)
+    regressor.fit(X_train, y_train, epochs = 600, batch_size = 100)
 
     return regressor
 
-classifier = KerasClassifier(build_fn = build_classifier)
-parameters = {'batch_size':[25,32,50],
-              'nb_epoch' : [100,250,500],
-              'optimizer' : ['adam', 'rmsprop'],
-              'neurons' : [20,50,70],
-              'rate' : [0.1,0.25,0.5],
-              'nr_layers' : [5,10,12]}
-grid_search = GridSearchCV(estimator = classifier,
+regressor = KerasRegressor(build_fn = build_regressor)
+parameters = {'neurons' : [60,70,80,90,100]}
+grid_search = GridSearchCV(estimator = regressor,
                            param_grid = parameters,
-                           scoring = 'mean_squared_error',
+                           scoring = 'neg_root_mean_squared_error',
                            cv = 10)
 grid_search = grid_search.fit(X_train,y_train)
 best_parameters = grid_search.best_params_
 best_accuracy = grid_search.best_score_
-
