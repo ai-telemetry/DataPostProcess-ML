@@ -48,7 +48,7 @@ training_set = dataset.drop(columns= ["rTyreSlipFL",
 
 
 # Encoding True/False into 0 and 1
-arraynames = ['isEngineLimiterOn']
+arraynames = ['isEngineLimiterOn','isAbsInAction']
 for name in arraynames:
     training_set[name] = training_set[name].astype(int)
 
@@ -58,25 +58,18 @@ training_set_X = training_set.drop(columns= ['rTyreSlipFR'])
 training_set_y = training_set['rTyreSlipFR'].values
 training_set_y = training_set_y.reshape(-1,1)
 
-# Feature Scaling
-"""from sklearn.preprocessing import MinMaxScaler
-sc_x = MinMaxScaler(feature_range = (0, 1))
-training_set_X = sc_x.fit_transform(training_set_X)
-sc_y = MinMaxScaler(feature_range = (0, 1))
-training_set_y = sc_y.fit_transform(training_set_y)
-"""
+# Feature Scaling X and transfer to numpy array
 min_ts_X = training_set_X.min(axis = 0)
 max_ts_X = training_set_X.max(axis = 0)
-
 training_set_X_scaled = (training_set_X - min_ts_X)/(max_ts_X - min_ts_X)
 has_nan = pd.isnull(training_set_X_scaled).values.any()
 assert has_nan == False
+training_set_X_scaled = training_set_X_scaled.to_numpy()
 
+# Feature Scaling y
 min_ts_y = training_set_y.min(axis = 0)
 max_ts_y = training_set_y.max(axis = 0)
-
 training_set_y_scaled = (training_set_y - min_ts_y)/(max_ts_y - min_ts_y)
-
 training_set_y_scaled.reshape(-1,1)
 
 # Creating a data structure with 60(can be changed) timesteps and 1 output
@@ -85,12 +78,13 @@ X_train = []
 y_train = []
 for i in range(lookback, training_set_X_scaled.shape[0]):
     X_train.append(training_set_X_scaled[i-lookback:i, 0])
-    y_train.append(training_set_y[i, 0])
+    y_train.append(training_set_y_scaled[i, 0])
         
 X_train, y_train = np.array(X_train), np.array(y_train)
 
 # Reshaping
 X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 1))
+
 
 # Import the Keras libraries and packages
 from keras.models import Sequential
@@ -116,6 +110,12 @@ regressor.add(Dropout(0.2))
 regressor.add(LSTM(units = 50, return_sequences = True))
 regressor.add(Dropout(0.2))
 
+regressor.add(LSTM(units = 50, return_sequences = True))
+regressor.add(Dropout(0.2))
+
+regressor.add(LSTM(units = 50, return_sequences = True))
+regressor.add(Dropout(0.2))
+
 # adding fourth layer last layer so return = false
 regressor.add(LSTM(units = 50))
 regressor.add(Dropout(0.2))
@@ -138,38 +138,54 @@ dataset_test = pd.read_csv('D:\GitHub\DataPostProcess-ML\Python\Models\SlipAngle
 dataset_test = dataset_test.dropna()
 
 # Creating the y variabel
-test_set_y = dataset_test["rTyreSlipFR"].values
+test_set_y = dataset_test["rTyreSlipFR"]
+test_set_y_scaled = (test_set_y - min_ts_y)/(max_ts_y - min_ts_y)
 
-test_set = dataset_test.drop(columns= ["rTyreSlipFR",
-                            "rTyreSlipFL",
-                           "rTyreSlipRL",
-                           "rTyreSlipRR",
-                           "aTyreSlipFR",
-                           "aTyreSlipFL",
-                           "aTyreSlipRL",
-                           "aTyreSlipRR",
-                           "ndSlipFL",
-                           "ndSlipFR",
-                           "ndSlipRL",
-                           "ndSlipRR",
-                           "isInPit",
-                           "vCar_kph",
-                           "vCar_mph",
-                           "tLap",
-                           "tLastLap",
-                           "tBestLap",
-                           "nLap"])
+test_set_X = dataset_test.drop(columns= ["rTyreSlipFR",
+                                         "rTyreSlipFL",
+                                         "rTyreSlipRL",
+                                         "rTyreSlipRR",
+                                         "aTyreSlipFR",
+                                         "aTyreSlipFL",
+                                         "aTyreSlipRL",
+                                         "aTyreSlipRR",
+                                         "ndSlipFL",
+                                         "ndSlipFR",
+                                         "ndSlipRL",
+                                         "ndSlipRR",
+                                         "isInPit",
+                                         "vCar_kph",
+                                         "vCar_mph",
+                                         "tLap",
+                                         "tLastLap",
+                                         "tBestLap",
+                                         "nLap",
+                                         "isTcEnabled",
+                                         "isTcInAction",
+                                         "isAbsEnabled",
+                                         "aContactPatchSlipFL",
+                                         "aContactPatchSlipFR",
+                                         "aContactPatchSlipRL",
+                                         "aContactPatchSlipRR",
+                                         "aPitch",
+                                         "tyreRadiusFL",
+                                         "tyreRadiusFR",
+                                         "tyreRadiusRL",
+                                         "tyreRadiusRR"])
 
 
 # Encoding True/False into 0 and 1
-arraynames = ['isAbsEnabled','isAbsInAction','isTcEnabled','isTcInAction','isEngineLimiterOn']
 for name in arraynames:
-    test_set[name] = test_set[name].astype(int)
+    test_set_X[name] = test_set_X[name].astype(int)
+
 
 # Getting the predicted values
-dataset_total = pd.concat((training_set, test_set), axis = 0)
-inputs = dataset_total[len(dataset_total) - len(test_set) - lookback:].values
-inputs = sc_x.transform(inputs)
+dataset_total = pd.concat((training_set_X , test_set_X), axis = 0)
+inputs = dataset_total[len(dataset_total) - len(test_set_X) - lookback:]
+
+# Scaling input data for model
+inputs = (inputs - min_ts_X)/(max_ts_X - min_ts_X)
+inputs = inputs.to_numpy()
 
 # Creating a data structure
 X_test = []
@@ -179,8 +195,18 @@ X_test = np.array(X_test)
 
 X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
 
-predicted_rTyreSlipFR = regressor.predict(X_test)
-predicted_rTyreSlipFR = sc_y.inverse_transform(predicted_rTyreSlipFR)
+predicted_rTyreSlipFR_scaled = regressor.predict(X_test)
+predicted_rTyreSlipFR = pd.DataFrame(data = predicted_rTyreSlipFR_scaled )
+predicted_rTyreSlipFR = (predicted_rTyreSlipFR * (max_ts_y - min_ts_y)) + min_ts_y
+
+# Visualising the results
+plt.plot(test_set_y_scaled, color = 'red', label = 'Real scaled')
+plt.plot(predicted_rTyreSlipFR_scaled , color = 'blue', label = 'Pred scaled')
+plt.title('Scaled')
+plt.xlabel('Time')
+plt.ylabel('r slip angle')
+plt.legend()
+plt.show()
 
 # Visualising the results
 plt.plot(test_set_y, color = 'red', label = 'Real')
@@ -191,5 +217,5 @@ plt.ylabel('r slip angle')
 plt.legend()
 plt.show()
 
-plt.plot(test_set_y)
-plt.show()
+plt.plot(inputs)
+plt.plot(training_set_X)
