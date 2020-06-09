@@ -73,7 +73,7 @@ training_set_y_scaled = (training_set_y - min_ts_y)/(max_ts_y - min_ts_y)
 training_set_y_scaled.reshape(-1,1)
 
 # Creating a data structure with 60(can be changed) timesteps and 1 output
-lookback = 10 # Decide how far to look back
+lookback = 2 # Decide how far to look back
 X_train = []
 y_train = []
 for i in range(lookback, training_set_X_scaled.shape[0]):
@@ -98,37 +98,31 @@ from keras.layers import Dropout
 regressor = Sequential()
 
 # adding first layer
-regressor.add(LSTM(50, return_sequences = True,
+regressor.add(LSTM(100, return_sequences = True,
                    input_shape = ( X_train.shape[1], 1)))
-regressor.add(Dropout(0.2))
+regressor.add(Dropout(0.1))
 
 # adding third layer
-regressor.add(LSTM(units = 50, return_sequences = True))
-regressor.add(Dropout(0.2))
+regressor.add(LSTM(units = 100, return_sequences = True))
+regressor.add(Dropout(0.1))
 
 # adding third layer
-regressor.add(LSTM(units = 50, return_sequences = True))
-regressor.add(Dropout(0.2))
-
-regressor.add(LSTM(units = 50, return_sequences = True))
-regressor.add(Dropout(0.2))
-
-regressor.add(LSTM(units = 50, return_sequences = True))
-regressor.add(Dropout(0.2))
+regressor.add(LSTM(units = 100, return_sequences = True))
+regressor.add(Dropout(0.1))
 
 # adding fourth layer last layer so return = false
-regressor.add(LSTM(units = 50))
-regressor.add(Dropout(0.2))
+regressor.add(LSTM(units = 100))
+regressor.add(Dropout(0.1))
 
 # Output layer
 regressor.add(Dense(units = 1))
 
 # Compilling the RNN
-regressor.compile(optimizer = 'adam',
+regressor.compile(optimizer = 'adam', # try rmsprop
                   loss = 'mean_squared_error')
 
 # Fitting the RNN to the Training set
-regressor.fit(X_train, y_train, epochs = 50, batch_size = 150)
+regressor.fit(X_train, y_train, epochs = 50, batch_size = 200)
 
 
 # Importing the training set
