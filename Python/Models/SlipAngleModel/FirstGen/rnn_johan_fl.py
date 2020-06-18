@@ -20,7 +20,7 @@ dataset = dataset.dropna()
 
 
 # Creating the X variables
-training_set = dataset.drop(columns= ["rTyreSlipFL",
+training_set = dataset.drop(columns= ["rTyreSlipFR",
                            "rTyreSlipRL",
                            "rTyreSlipRR",
                            "aTyreSlipFR",
@@ -61,8 +61,8 @@ for name in arraynames:
 
 # Checking head
 training_set_head = training_set.head()
-training_set_X = training_set.drop(columns= ['rTyreSlipFR'])
-training_set_y = training_set['rTyreSlipFR'].values
+training_set_X = training_set.drop(columns= ['rTyreSlipFL'])
+training_set_y = training_set['rTyreSlipFL'].values
 training_set_y = training_set_y.reshape(-1,1)
 
 # Feature Scaling X and transfer to numpy array
@@ -146,7 +146,7 @@ dataset_test = pd.read_csv('D:\GitHub\DataPostProcess-ML\Python\Models\SlipAngle
 dataset_test = dataset_test.dropna()
 
 # Creating the y variabel
-test_set_y = dataset_test["rTyreSlipFR"]
+test_set_y = dataset_test["rTyreSlipFL"]
 gvert = dataset_test["gVert"]
 glat = dataset_test["gLat"]
 test_set_y_scaled = (test_set_y - min_ts_y)/(max_ts_y - min_ts_y)
